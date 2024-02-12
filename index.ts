@@ -52,8 +52,10 @@ async function SendSrtToRtmp(
     srtUrlWithParams.searchParams.append(key, value.toString());
   }
 
+  srtUrlWithParams.search = decodeURIComponent(srtUrlWithParams.search);
+
   const args = {
-    i: srtUrlWithParams.toString(),
+    uri: srtUrlWithParams.toString(),
     ar: encoderOptions.audioSamplingRate,
     cv: "libx264",
     x264opts: `nal-hrd=cbr:bframes=${encoderOptions.bframes}:keyint=${
@@ -61,18 +63,26 @@ async function SendSrtToRtmp(
     }:no-scenecut`,
     preset: encoderOptions.preset,
     ca: "aac",
-    ba: "160k",
+    ba: "160000",
     bv: `${encoderOptions.videoBitrate}k`,
     bufsize: `${encoderOptions.bufferSize ?? encoderOptions.videoBitrate * 2}k`,
     filterv: `fps=${encoderOptions.frameRate}`,
     f: "flv",
   };
 
-  const ffmpeg = await $`ffmpeg -re -i ${args.i}
-  } -ar ${args.ar} -c:v ${args.cv} -x264opts ${args.x264opts} -preset ${args.preset} -c:a ${args.ca} -b:a ${args.ba} -b:v ${args.bv} -bufsize ${args.bufsize}k -filter:v ${args.filterv} -f ${args.f} ${rtmpUrl}`;
+  const converter = await $`gst-launch-1.0 srtsrc uri=${srtUrl} blocksize=${
+    1024 * 1024
+  } mode="caller" \
+    ! queue ! decodebin name=src \
+    \
+    src. ! queue ! x264enc cabac=1 bframes=2 ref=1 bitrate=3000 ! "video/x-h264,profile=main" ! mux. \
+    \
+    src. ! queue ! audioconvert ! audioresample ! audio/x-raw,rate=48000,channels=2 ! faac bitrate=128000 \
+    \
+    ! queue ! flvmux name=mux streamable=true ! queue ! rtmpsink location=${rtmpUrl}`;
 
-  if (ffmpeg.stderr !== null) {
-    const error = ffmpeg.stderr.toString();
+  if (converter.stderr !== null) {
+    const error = converter.stderr.toString();
 
     if (error.includes("command not found: ffmpeg")) {
       if (!autoInstall) {
@@ -100,7 +110,7 @@ async function SendSrtToRtmp(
     }
   }
 
-  for (const line of ffmpeg.stdout.toString()) {
+  for (const line of converter.stdout.toString()) {
     console.log(line);
   }
 }
