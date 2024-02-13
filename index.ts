@@ -72,7 +72,7 @@ async function SendSrtToRtmp(
 
   const converter = await $`gst-launch-1.0 srtsrc uri=${srtUrl} blocksize=${
     1024 * 1024
-  } mode="caller" \
+  } mode="caller" auto-reconnect=false \
     ! queue ! decodebin name=src \
     \
     src. ! queue ! x264enc cabac=1 bframes=2 ref=1 bitrate=3000 ! "video/x-h264,profile=main" ! mux. \
