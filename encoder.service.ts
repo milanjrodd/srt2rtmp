@@ -116,6 +116,8 @@ async function SendSrtToRtmp(
 }
 
 export class EncoderService {
+  // IDEA: save encoders in a database, so that they can be retrieved later even if the server restarts
+
   private encoders: Map<string, Subprocess> = new Map();
 
   constructor() {}

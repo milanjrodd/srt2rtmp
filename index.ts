@@ -2,6 +2,8 @@ import { EncoderService } from "./encoder.service";
 
 const encoderService = new EncoderService();
 
+// TODO: Check if server was restarted and re-create unfinished encoders from database
+
 Bun.serve({
   async fetch(req) {
     if (req.url === "/") {
