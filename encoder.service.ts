@@ -1,4 +1,5 @@
-import { env, $, ShellPromise, type Subprocess } from "bun";
+import { env, $, ShellPromise, type Subprocess, resolve, pathToFileURL } from "bun";
+// import { srt2rtmpPipeline } from "./encoder";
 
 const ENCODING_PRESETS = [
   "ultrafast",
@@ -115,6 +116,9 @@ async function SendSrtToRtmp(
   }
 }
 
+const gst = import.meta.env.GST;
+const ffmpeg = import.meta.env.FFMPEG;
+
 export class EncoderService {
   // IDEA: save encoders in a database, so that they can be retrieved later even if the server restarts
 
@@ -122,14 +126,17 @@ export class EncoderService {
 
   constructor() {}
 
-  public async createEncoder(srtUrl: string, rtmpUrl: string) {
+  public async createGSTEncoder(srtUrl: string, rtmpUrl: string) {
     if (!srtUrl) throw new Error("SRT URL is required");
     if (!rtmpUrl) throw new Error("RTMP URL is required");
 
     const encoders = this.encoders;
+    
+    const encoderPath = import.meta.env.GST_ENCODER_PATH;
 
-    const encoder = Bun.spawn(["bun", "encoder.ts"], {
-      env: { RTMP_URL: rtmpUrl, SRT_URL: srtUrl },
+    const encoder = Bun.spawn([encoderPath], {
+      cwd: ".",
+      env: { RTMP_URL: rtmpUrl, SRT_URL: srtUrl, GST: gst },
       onExit(proc, exitCode, signalCode, error) {
         if (error) {
           console.error(error);
@@ -141,6 +148,51 @@ export class EncoderService {
       },
     });
 
+    const textDecoder = new TextDecoder();
+
+    new Promise(async (resolve, reject) => {
+      for await (let line of encoder.stdout.values()) {
+        console.log("[ ENCODER", encoder.pid, "]:", textDecoder.decode(line)); 
+      }
+    });
+    
+    
+
+    encoders.set(srtUrl, encoder);
+
+    return encoder;
+  }
+
+  public async createFFMPEGEncoder(srtUrl: string, rtmpUrl: string) {
+    if (!srtUrl) throw new Error("SRT URL is required");
+    if (!rtmpUrl) throw new Error("RTMP URL is required");
+
+    const encoders = this.encoders;
+    
+    const encoderPath = import.meta.env.FFMPEG_ENCODER_PATH;
+
+    const encoder = Bun.spawn([encoderPath], {
+      cwd: ".",
+      env: { RTMP_URL: rtmpUrl, SRT_URL: srtUrl, FFMPEG: ffmpeg },
+      onExit(proc, exitCode, signalCode, error) {
+        if (error) {
+          console.error(error);
+        } else {
+          console.log(`Encoder exited with code ${exitCode}`);
+        }
+
+        encoders.delete(srtUrl);
+      },
+    });
+
+    const textDecoder = new TextDecoder();
+
+    new Promise(async (resolve, reject) => {
+      for await (let line of encoder.stdout.values()) {
+        console.log("[ ENCODER", encoder.pid, "]:", textDecoder.decode(line)); 
+      }
+    });
+    
     encoders.set(srtUrl, encoder);
 
     return encoder;

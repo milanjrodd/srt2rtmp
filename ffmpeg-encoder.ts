@@ -7,9 +7,9 @@ const videoBitrate = 3000;
 
 const rtmpUrl = import.meta.env.RTMP_URL;
 const srtUrl = import.meta.env.SRT_URL;
-const gst = import.meta.env.GST;
+const ffmpeg = import.meta.env.FFMPEG;
 
-await $`${gst} srtsrc uri=${srtUrl} blocksize=${blocksize} mode="caller" auto-reconnect=false ! tsdemux \
+await $`${ffmpeg} srtsrc uri=${srtUrl} blocksize=${blocksize} mode="caller" auto-reconnect=false ! tsdemux \
 ! queue ! decodebin name=src \
 \
 src. ! queue ! x264enc cabac=1 bframes=2 ref=1 bitrate=${videoBitrate} ! "video/x-h264,profile=main" ! mux. \
