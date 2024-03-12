@@ -1,0 +1,41 @@
+version: "3"
+services:
+  orange:
+    container_name: orange
+    build:
+      context: .
+      dockerfile: Dockerfile
+      # reference docker target
+      target: release
+    restart: unless-stopped
+    healthcheck: #optional (recommended) since v0.10.0
+      test: wget --no-verbose --tries=1 --spider http://localhost:${BACKEND_PORT_ORANGE}/api/health || exit 1
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    environment:
+      SRT_URL: ${SRT_URL_ORANGE}
+      RTMP_URL: ${RTMP_URL_ORANGE}
+      PORT: ${BACKEND_PORT_ORANGE}
+    ports:
+      - ${BACKEND_PORT_ORANGE}:${BACKEND_PORT_ORANGE}
+
+  green:
+    container_name: green
+    build:
+      context: .
+      dockerfile: Dockerfile
+      # reference docker target
+      target: release
+    restart: unless-stopped
+    healthcheck: #optional (recommended) since v0.10.0
+      test: wget --no-verbose --tries=1 --spider http://localhost:${BACKEND_PORT_GREEN} || exit 1
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    environment:
+      SRT_URL: ${SRT_URL_GREEN}
+      RTMP_URL: ${RTMP_URL_GREEN}
+      PORT: ${BACKEND_PORT_GREEN}
+    ports:
+      - ${BACKEND_PORT_GREEN}:${BACKEND_PORT_GREEN}
