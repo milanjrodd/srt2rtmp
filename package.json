@@ -4,10 +4,13 @@
   "type": "module",
   "scripts": {
     "dev": "bun --watch index.ts",
-    "build": "bun build:encoder && bun build:server",
+    "build": "bun build:encoders && bun build:server",
     "build:server": "bun build ./index.ts --compile --outfile srt2rtmp",
-    "build:encoder": "bun build ./encoder.ts --compile --outfile encoder",
-    "dev:encoder": "bun build ./encoder.ts --compile --outfile encoder --watch"
+    "build:encoders": "bun build:gst-encoder && bun build:ffmpeg-encoder",
+    "build:gst-encoder": "bun build ./gst-encoder.ts --compile --outfile gst-encoder.bin",
+    "build:ffmpeg-encoder": "bun build ./ffmpeg-encoder.ts --compile --outfile ffmpeg-encoder.bin",
+    "dev:gst-encoder": "bun build:gst-encoder --watch",
+    "dev:ffmpeg-encoder": "bun build:ffmpeg-encoder --watch"
   },
   "devDependencies": {
     "@types/bun": "latest"
