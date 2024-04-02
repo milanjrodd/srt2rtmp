@@ -41,7 +41,7 @@ const encoderOptions: IEncoderOptions = {
   frameRate: 48,
   preset: "superfast",
   bframes: 2,
-}
+};
 
 const srtParams = {
   recv_buffer_size: encoderOptions.inputBufferSizeInKB * 1024,
@@ -62,11 +62,24 @@ const args = {
   }:no-scenecut`,
   preset: encoderOptions.preset,
   ca: "aac",
-  ba: "160000",
+  ba: "160k",
   bv: `${encoderOptions.videoBitrate}k`,
   bufsize: `${encoderOptions.bufferSize ?? encoderOptions.videoBitrate * 2}k`,
   filterv: `fps=${encoderOptions.frameRate}`,
   f: "flv",
 };
 
-await $`${ffmpeg} -re -i ${args.i} -ar ${args.ar} -c:v ${args.cv} -x264opts ${args.x264opts} -preset ${args.preset} -c:a ${args.ca} -b:a ${args.ba} -b:v ${args.bv} -bufsize ${args.bufsize} -filter:v ${args.filterv} -f ${args.f} ${rtmpUrl}`;
+console.log(args.i);
+
+const pipeline =
+  await $`${ffmpeg} -re -i ${args.i} -ar ${args.ar} -c:v ${args.cv} -x264opts ${args.x264opts} -preset ${args.preset} -c:a ${args.ca} -b:a ${args.ba} -b:v ${args.bv} -bufsize ${args.bufsize} -filter:v ${args.filterv} -f ${args.f} ${rtmpUrl}`;
+
+if (pipeline.stderr !== null) {
+  const error = pipeline.stderr.toString();
+
+  throw error;
+}
+
+for (const line of pipeline.stdout.toString()) {
+  console.log(line);
+}
